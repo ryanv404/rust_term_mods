@@ -1,0 +1,14 @@
+[package]
+name = "rust_term_mods"
+description = "A simple library for terminal manipulation and text styling using ANSI control sequences."
+version = "0.1.0"
+authors = ["ryanv404"]
+edition = "2021"
+repository = "https://github.com/ryanv404/rust_term_mods"
+keywords = ["ansi", "terminal", "colors", "styles"]
+categories = ["command-line-interface"]
+readme = "README.md"
+license = "MIT"
+
+[lib]
+name = "rust_term_mods"
