@@ -6,6 +6,8 @@ use std::{
 use rust_term_mods::Colorize;
 
 fn main() {
+    println!("24-bit RGB Colors:");
+
     let symbols = vec!["/", "\\"];
 
     let (width, height) = get_terminal_size();

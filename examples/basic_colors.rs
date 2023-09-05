@@ -1,6 +1,8 @@
 use rust_term_mods::Colorize;
 
 fn main() {
+    println!("Basic Colors:");
+
     // Prints all 16 basic background colors.
     Colorize::this("   ").bg_black().print();
     Colorize::this("   ").bg_red().print();

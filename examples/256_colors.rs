@@ -1,8 +1,9 @@
 use rust_term_mods::Colorize;
 
 fn main() {
-    // Prints all 256 colors present in 256-color mode.
+    println!("256-Color Mode Colors:");
 
+    // Prints all 256 colors present in 256-color mode.
     let mut basic_block: Vec<String> = vec![];
     let mut color_block1: Vec<String> = vec![];
     let mut color_block2: Vec<String> = vec![];

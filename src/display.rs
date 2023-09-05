@@ -13,21 +13,25 @@ impl<'a> Colorize<'a> {
         } else {
             self.get_ansi()
         };
+
         let mut stdout = io::stdout().lock();
-        if let Err(e) = write!(stdout, "{ansi_string}") {
+        if let Err(e) = stdout.write_all(ansi_string.as_bytes()) {
             eprintln!("Error while writing text to stdout. {e}");
         }
     }
 
     /// Prints the styled string to stdout with a newline.
     pub fn println(&mut self) {
-        let ansi_string = if self.text.is_empty() {
+        let mut ansi_string = if self.text.is_empty() {
             self.text.to_string()
         } else {
             self.get_ansi()
         };
+
+        ansi_string.push('\n');
+
         let mut stdout = io::stdout().lock();
-        if let Err(e) = writeln!(stdout, "{ansi_string}") {
+        if let Err(e) = stdout.write_all(ansi_string.as_bytes()) {
             eprintln!("Error while writing text to stdout. {e}");
         }
     }
@@ -39,21 +43,25 @@ impl<'a> Colorize<'a> {
         } else {
             self.get_ansi()
         };
+
         let mut stderr = io::stderr().lock();
-        if let Err(e) = write!(stderr, "{ansi_string}") {
+        if let Err(e) = stderr.write_all(ansi_string.as_bytes()) {
             eprintln!("Error while writing text to stderr. {e}");
         }
     }
 
     /// Prints the styled string to stderr with a newline.
     pub fn eprintln(&mut self) {
-        let ansi_string = if self.text.is_empty() {
+        let mut ansi_string = if self.text.is_empty() {
             self.text.to_string()
         } else {
             self.get_ansi()
         };
+
+        ansi_string.push('\n');
+
         let mut stderr = io::stderr().lock();
-        if let Err(e) = writeln!(stderr, "{ansi_string}") {
+        if let Err(e) = stderr.write_all(ansi_string.as_bytes()) {
             eprintln!("Error while writing text to stderr. {e}");
         }
     }
