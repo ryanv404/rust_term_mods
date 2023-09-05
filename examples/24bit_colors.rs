@@ -1,6 +1,6 @@
 use std::{
     process::{Command, Stdio},
-    str,
+    str::{self, FromStr},
 };
 
 use rust_term_mods::Colorize;
@@ -8,13 +8,13 @@ use rust_term_mods::Colorize;
 fn main() {
     println!("24-bit RGB Colors:");
 
-    let symbols = vec!["/", "\\"];
-
     let (width, height) = get_terminal_size();
 
     let total_cols = width - 1;
     let total_rows = height - 2;
     let total_cells = total_cols * total_rows;
+
+    let symbols = vec!["/", "\\"];
 
     for cellnum in 0..total_cells {
         let red = match (255 - cellnum * 255 / total_cells).try_into() {
@@ -46,34 +46,28 @@ fn main() {
             println!();
         }
     }
+
+    println!();
 }
 
 fn get_terminal_size() -> (u32, u32) {
-    let Ok(mut tput_child) = Command::new("tput")
+    // Must ensure that stdin is inherited from the parent for tput to
+    // return the correct terminal size.
+    let Ok(tput_out) = Command::new("tput")
         .args(["cols", "lines"])
-        .stdout(Stdio::piped())
-        .spawn() else { return (75, 20) };
-
-    let Some(cat_in) = tput_child.stdout.take() else { return (75, 20) };
-
-    let Ok(cat_out) = Command::new("cat")
-        .arg("-")
-        .stdin(cat_in)
+        .stdin(Stdio::inherit())
         .output() else { return (75, 20) };
 
-    let Ok(size_str) = str::from_utf8(&cat_out.stdout) else { return (75, 20) };
+    let mut size_iter = tput_out.stdout.split(|byte| *byte == b'\n');
 
-    let size_vec: Vec<&str> = size_str.trim().split("\n").collect();
+    let Some(width_bytes) = size_iter.next() else { return (75, 20) };
+    let Some(height_bytes) = size_iter.next() else { return (75, 20) };
 
-    if size_vec.len() != 2 {
-        return (75, 20);
-    }
+    let Ok(width_str) = str::from_utf8(width_bytes) else { return (75, 20) };
+    let Ok(height_str) = str::from_utf8(height_bytes) else { return (75, 20) };
 
-    let (Ok(width), Ok(height)) = (
-        size_vec[0].parse::<u32>(), size_vec[1].parse::<u32>()
-    ) else {
-        return (75, 20);
-    };
+    let Ok(width) = u32::from_str(width_str) else { return (75, 20) };
+    let Ok(height) = u32::from_str(height_str) else { return (75, 20) };
 
     (width, height)
 }

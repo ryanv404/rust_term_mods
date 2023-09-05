@@ -1,12 +1,21 @@
 #![cfg(test)]
 
-use crate::Colorize;
+use crate::{Colorize, Cursor, ClearScreen, ClearLine, Scroll};
 
 macro_rules! test_style {
     ($label:ident: $style:expr => $ansi:literal) => {
         #[test]
         fn $label() {
             assert_eq!($style.get_ansi(), $ansi.to_string());
+        }
+    };
+}
+
+macro_rules! test_modifier {
+    ($label:ident: $modifier:expr => $ansi:expr) => {
+        #[test]
+        fn $label() {
+            assert_eq!($modifier, $ansi.to_string());
         }
     };
 }
@@ -83,3 +92,27 @@ test_style!(
     Colorize::this("X").bg_rgb(23, 24, 25).fg_rgb(123, 52, 212).strike() =>
     "\x1b[9;38;2;123;52;212;48;2;23;24;25mX\x1b[0m"
 );
+
+// Terminal scrolling tests
+test_modifier!(scroll_up: Scroll::up(1) => "\x1b[1S");
+test_modifier!(scroll_down: Scroll::down(4) => "\x1b[4T");
+
+// Clear screen tests
+test_modifier!(clr_scr_all: ClearScreen::all() => "\x1b[2J");
+test_modifier!(clr_scr_to_end: ClearScreen::to_end() => "\x1b[0J");
+test_modifier!(clr_scr_to_start: ClearScreen::to_start() => "\x1b[1J");
+
+// Clear line tests
+test_modifier!(clr_line_all: ClearLine::all() => "\x1b[2K");
+test_modifier!(clr_line_to_end: ClearLine::to_end() => "\x1b[0K");
+test_modifier!(clr_line_to_start: ClearLine::to_start() => "\x1b[1K");
+
+// Cursor modifier tests
+test_modifier!(cursor_show: Cursor::show() => "\x1b[?25h");
+test_modifier!(cursor_hide: Cursor::hide() => "\x1b[?25l");
+test_modifier!(cursor_up: Cursor::up(3) => "\x1b[3A");
+test_modifier!(cursor_down: Cursor::down(3) => "\x1b[3B");
+test_modifier!(cursor_forward: Cursor::forward(3) => "\x1b[3C");
+test_modifier!(cursor_back: Cursor::back(3) => "\x1b[3D");
+test_modifier!(cursor_col: Cursor::column(3) => "\x1b[3G");
+test_modifier!(cursor_goto: Cursor::goto(13, 12) => "\x1b[13;12H");

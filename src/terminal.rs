@@ -1,13 +1,21 @@
-pub use crate::{colors::CSI, ClearLine, ClearScreen, Cursor, Scroll};
+pub use std::{
+    io::{self, Write},
+    process::{Command, Stdio},
+    str::{self, FromStr},
+};
+
+pub use crate::{
+    colors::CSI, ClearLine, ClearScreen, Cursor, Scroll
+};
 
 impl Scroll {
-    /// Scroll the terminal screen up `num` lines.
+    /// Scrolls the terminal screen up `num` lines.
     #[must_use]
     pub fn up(num: u8) -> String {
         format!("{CSI}{num}S")
     }
 
-    /// Scroll the terminal screen down `num` lines.
+    /// Scrolls the terminal screen down `num` lines.
     #[must_use]
     pub fn down(num: u8) -> String {
         format!("{CSI}{num}T")
@@ -15,129 +23,155 @@ impl Scroll {
 }
 
 impl ClearScreen {
-    /// Clear the full terminal screen.
+    /// Clears the full terminal screen.
     #[must_use]
     pub fn all() -> String {
         format!("{CSI}2J")
     }
 
-    /// Clear the terminal screen from the cursor to the end of the screen.
+    /// Clears the terminal screen from the cursor to the end of the screen.
     #[must_use]
     pub fn to_end() -> String {
         format!("{CSI}0J")
     }
 
-    /// Clear the terminal screen from the cursor to the beginning of the screen.
+    /// Clears the terminal screen from the cursor to the beginning of the screen.
     #[must_use]
     pub fn to_start() -> String {
         format!("{CSI}1J")
     }
+
+    /// Clears the full terminal screen.
+    pub fn clr_scr(w: &mut io::StdoutLock) {
+        w.write_all(format!("{CSI}2J").as_bytes()).unwrap();
+    }
 }
 
 impl ClearLine {
-    /// Clear the current line.
+    /// Clears the current line.
     #[must_use]
     pub fn all() -> String {
         format!("{CSI}2K")
     }
 
-    /// Clear the current line from the cursor to the end of the line.
+    /// Clears the current line from the cursor to the end of the line.
     #[must_use]
     pub fn to_end() -> String {
         format!("{CSI}0K")
     }
 
-    /// Clear the current line from the cursor to the beginning of the line.
+    /// Clears the current line from the cursor to the beginning of the line.
     #[must_use]
     pub fn to_start() -> String {
         format!("{CSI}1K")
     }
+
+    /// Clears the current line.
+    pub fn clr_line(w: &mut io::StdoutLock) {
+        w.write_all(format!("{CSI}2K").as_bytes()).unwrap();
+    }
 }
 
 impl Cursor {
-    /// Show the terminal cursor.
+    /// Shows the terminal cursor.
     #[must_use]
     pub fn show() -> String {
         format!("{CSI}?25h")
     }
 
-    /// Hide the terminal cursor.
+    /// Hides the terminal cursor.
     #[must_use]
     pub fn hide() -> String {
         format!("{CSI}?25l")
     }
 
-    /// Move the cursor `num` cells up.
+    /// Moves the cursor `num` cells up.
     #[must_use]
     pub fn up(num: u8) -> String {
         format!("{CSI}{num}A")
     }
 
-    /// Move the cursor `num` cells down.
+    /// Moves the cursor `num` cells down.
     #[must_use]
     pub fn down(num: u8) -> String {
         format!("{CSI}{num}B")
     }
 
-    /// Move the cursor `num` cells forward.
+    /// Moves the cursor `num` cells forward.
     #[must_use]
     pub fn forward(num: u8) -> String {
         format!("{CSI}{num}C")
     }
 
-    /// Move the cursor `num` cells backward.
+    /// Moves the cursor `num` cells backward.
     #[must_use]
     pub fn back(num: u8) -> String {
         format!("{CSI}{num}D")
     }
 
-    /// Move the cursor to column `num`.
+    /// Moves the cursor to column `num`.
     #[must_use]
     pub fn column(num: u8) -> String {
         format!("{CSI}{num}G")
     }
 
-    /// Move the cursor to row `row` and column `col`.
+    /// Moves the cursor to row `row` and column `col`.
     #[must_use]
     pub fn goto(row: u8, col: u8) -> String {
         format!("{CSI}{row};{col}H")
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    macro_rules! test_modifier {
-        ($label:ident: $modifier:expr => $ansi:expr) => {
-            #[test]
-            fn $label() {
-                assert_eq!($modifier, $ansi.to_string());
-            }
-        };
+    /// Moves the cursor to the bottom left position on the screen.
+    pub fn goto_bl(rows: u8, w: &mut io::StdoutLock) {
+        w.write_all(Cursor::goto(rows, 0).as_bytes()).unwrap();
     }
 
-    // Terminal scrolling tests
-    test_modifier!(scroll_up: Scroll::up(1) => "\x1b[1S");
-    test_modifier!(scroll_down: Scroll::down(4) => "\x1b[4T");
+    /// Moves the cursor to the top left position on the screen.
+    pub fn goto_tl(w: &mut io::StdoutLock) {
+        w.write_all(Cursor::goto(1, 1).as_bytes()).unwrap();
+    }
+}
 
-    // Clear screen tests
-    test_modifier!(clr_scr_all: ClearScreen::all() => "\x1b[2J");
-    test_modifier!(clr_scr_to_end: ClearScreen::to_end() => "\x1b[0J");
-    test_modifier!(clr_scr_to_start: ClearScreen::to_start() => "\x1b[1J");
+/// Writes a message that is centered on the screen.
+pub fn write_centered_msg(row: u8, width: u8, msg: &[u8], w: &mut io::StdoutLock) {
+    let len = u8::try_from(msg.len()).unwrap();
+    if len > width { return; }
 
-    // Clear line tests
-    test_modifier!(clr_line_all: ClearLine::all() => "\x1b[2K");
-    test_modifier!(clr_line_to_end: ClearLine::to_end() => "\x1b[0K");
-    test_modifier!(clr_line_to_start: ClearLine::to_start() => "\x1b[1K");
+    let col = (width / 2) - (len / 2);
+    write_msg(row, col, msg, w);
+}
 
-    // Cursor modifier tests
-    test_modifier!(cursor_show: Cursor::show() => "\x1b[?25h");
-    test_modifier!(cursor_hide: Cursor::hide() => "\x1b[?25l");
-    test_modifier!(cursor_up: Cursor::up(3) => "\x1b[3A");
-    test_modifier!(cursor_down: Cursor::down(3) => "\x1b[3B");
-    test_modifier!(cursor_forward: Cursor::forward(3) => "\x1b[3C");
-    test_modifier!(cursor_back: Cursor::back(3) => "\x1b[3D");
-    test_modifier!(cursor_col: Cursor::column(3) => "\x1b[3G");
-    test_modifier!(cursor_goto: Cursor::goto(13, 12) => "\x1b[13;12H");
+/// Writes a message to a given position on the screen.
+pub fn write_msg(row: u8, col: u8, msg: &[u8], w: &mut io::StdoutLock) {
+    w.write_all(Cursor::goto(row, col).as_bytes()).unwrap();
+    w.write_all(msg).unwrap();
+}
+
+/// Attempts to get the terminal size using tput and returns a sensible default
+/// if there is an error.
+///
+/// Returns (height, width).
+pub fn get_terminal_size() -> (u8, u8) {
+    // A child process executed with the output() method does not inherit
+    // the parent process' stdin by default.
+    //
+    // So, we must ensure that stdin is inherited from the parent process
+    // in order for tput to query the correct terminal's size.
+    let Ok(tput_out) = Command::new("tput")
+        .args(["cols", "lines"])
+        .stdin(Stdio::inherit())
+        .output() else { return (80, 20) };
+
+    let mut size_iter = tput_out.stdout.split(|byte| *byte == b'\n');
+
+    let Some(width_bytes) = size_iter.next() else { return (80, 20) };
+    let Some(height_bytes) = size_iter.next() else { return (80, 20) };
+
+    let Ok(width_str) = str::from_utf8(width_bytes) else { return (80, 20) };
+    let Ok(height_str) = str::from_utf8(height_bytes) else { return (80, 20) };
+
+    let Ok(width) = u8::from_str(width_str) else { return (80, 20) };
+    let Ok(height) = u8::from_str(height_str) else { return (80, 20) };
+
+    (height, width)
 }

@@ -34,4 +34,6 @@ fn main() {
         color_block2.join(""),
         gray_block.join("")
     );
+
+    println!();
 }

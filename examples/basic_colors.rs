@@ -20,4 +20,6 @@ fn main() {
     Colorize::this("   ").bg_br_magenta().print();
     Colorize::this("   ").bg_br_cyan().print();
     Colorize::this("   ").bg_br_white().println();
+
+    println!();
 }
