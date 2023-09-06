@@ -1,74 +1,71 @@
-use std::{
-    fmt,
-    io::{self, Write},
-};
-
 pub use crate::colors::{Attr, Bg, Colorize, Fg, CSI};
+
+// Describes the various printing methods.
+enum WriteKind {
+    Stdout,
+    Stderr,
+    StdoutNewline,
+    StderrNewline,
+}
 
 impl<'a> Colorize<'a> {
     /// Prints the styled string to stdout.
-    pub fn print(&mut self) {
-        let ansi_string = if self.text.is_empty() {
-            self.text.to_string()
-        } else {
-            self.get_ansi()
-        };
-
-        let mut stdout = io::stdout().lock();
-        if let Err(e) = stdout.write_all(ansi_string.as_bytes()) {
-            eprintln!("Error while writing text to stdout. {e}");
-        }
-    }
-
-    /// Prints the styled string to stdout with a newline.
-    pub fn println(&mut self) {
-        let mut ansi_string = if self.text.is_empty() {
-            self.text.to_string()
-        } else {
-            self.get_ansi()
-        };
-
-        ansi_string.push('\n');
-
-        let mut stdout = io::stdout().lock();
-        if let Err(e) = stdout.write_all(ansi_string.as_bytes()) {
-            eprintln!("Error while writing text to stdout. {e}");
-        }
+    pub fn print(&mut self) -> std::io::Result<()> {
+        self.write_common(WriteKind::Stdout)
     }
 
     /// Prints the styled string to stderr.
-    pub fn eprint(&mut self) {
-        let ansi_string = if self.text.is_empty() {
-            self.text.to_string()
-        } else {
-            self.get_ansi()
-        };
+    pub fn eprint(&mut self) -> std::io::Result<()> {
+        self.write_common(WriteKind::Stderr)
+    }
 
-        let mut stderr = io::stderr().lock();
-        if let Err(e) = stderr.write_all(ansi_string.as_bytes()) {
-            eprintln!("Error while writing text to stderr. {e}");
-        }
+    /// Prints the styled string to stdout with a newline.
+    pub fn println(&mut self) -> std::io::Result<()> {
+        self.write_common(WriteKind::StdoutNewline)
     }
 
     /// Prints the styled string to stderr with a newline.
-    pub fn eprintln(&mut self) {
+    pub fn eprintln(&mut self) -> std::io::Result<()> {
+        self.write_common(WriteKind::StderrNewline)
+    }
+
+    // Common logic for printing to stdout and stderr.
+    fn write_common(&mut self, kind: WriteKind) -> std::io::Result<()> {
+        use std::io::Write;
+
         let mut ansi_string = if self.text.is_empty() {
             self.text.to_string()
         } else {
             self.get_ansi()
         };
 
-        ansi_string.push('\n');
+        match kind {
+            WriteKind::Stdout => {
+                std::io::stdout().write_all(ansi_string.as_bytes())?;
+                std::io::stdout().flush()?;
+            },
+            WriteKind::Stderr => {
+                std::io::stderr().write_all(ansi_string.as_bytes())?;
+                std::io::stderr().flush()?;
+            },
+            WriteKind::StdoutNewline => {
+                ansi_string.push('\n');
+                std::io::stdout().write_all(ansi_string.as_bytes())?;
+                std::io::stdout().flush()?;
+            },
+            WriteKind::StderrNewline => {
+                ansi_string.push('\n');
+                std::io::stderr().write_all(ansi_string.as_bytes())?;
+                std::io::stderr().flush()?;
+            },
+        };
 
-        let mut stderr = io::stderr().lock();
-        if let Err(e) = stderr.write_all(ansi_string.as_bytes()) {
-            eprintln!("Error while writing text to stderr. {e}");
-        }
+        Ok(())
     }
 }
 
-impl fmt::Display for Fg {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for Fg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             Self::Black => write!(f, "30"),
             Self::Red => write!(f, "31"),
@@ -92,8 +89,8 @@ impl fmt::Display for Fg {
     }
 }
 
-impl fmt::Display for Bg {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for Bg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             Self::Black => write!(f, "40"),
             Self::Red => write!(f, "41"),
@@ -117,8 +114,8 @@ impl fmt::Display for Bg {
     }
 }
 
-impl fmt::Display for Attr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for Attr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             Self::Bold => write!(f, "1"),
             Self::Faint => write!(f, "2"),

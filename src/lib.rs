@@ -4,10 +4,8 @@
 //! ANSI control sequences.
 
 #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::cargo)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::missing_panics_doc)]
+#![deny(clippy::pedantic)]
+#![deny(clippy::cargo)]
 
 pub mod colors;
 pub mod display;
@@ -150,11 +148,5 @@ pub enum Attr {
     Strike,
 }
 
-/// Scroll the terminal screen.
-pub struct Scroll;
-
-/// Clear portions of the terminal screen.
-pub struct Clear;
-
-/// Manipulate the cursor appearance or position.
-pub struct Cursor;
+/// Terminal manipulation methods and attributes.
+pub struct Term;
