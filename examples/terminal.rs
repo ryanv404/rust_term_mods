@@ -1,15 +1,15 @@
 use std::io::{self, Write};
 
-use rust_term_mods::{Term, Colorize};
+use term_mods::{Term, Style};
 
 fn main() -> io::Result<()> {
-    let (height, width) = Term::get_terminal_size();
+    let (height, width) = Term::get_term_size();
 
     let mut stdout = io::stdout().lock();
 
-    make_test_block(height - 1, width, &mut stdout)?;
+    make_text_block(height - 1, width, &mut stdout)?;
 
-    let Ok(msg_len) = u8::try_from("| THIS IS A CENTERED TEST MESSAGE |".len()) else {
+    let Ok(msg_len) = u8::try_from("| THIS IS A CENTERED TEXT MESSAGE |".len()) else {
         return Err(io::Error::new(
             io::ErrorKind::Other,
             "Unable to parse a u8 integer from message length."
@@ -18,22 +18,20 @@ fn main() -> io::Result<()> {
 
     let msg    = format!(
         "| {} |",
-        Colorize::this("THIS IS A CENTERED TEST MESSAGE").br_red().get_ansi()
+        Style::this("THIS IS A CENTERED TEXT MESSAGE").cyan().get_ansi()
     );
     let border = "|                                 |";
 
     Term::write_centered((height / 2) - 1, width, border, &mut stdout)?;
     Term::write(height / 2, (width / 2) - (msg_len / 2), &msg, &mut stdout)?;
     Term::write_centered((height / 2) + 1, width, border, &mut stdout)?;
-
-    Term::cursor_bottomleft(height, &mut stdout)?;
+    Term::cursor_bl(height, &mut stdout)?;
 
     stdout.flush()?;
-    println!();
     Ok(())
 }
 
-fn make_test_block<W: Write>(rows: u8, cols: u8, w: &mut W) -> io::Result<()> {
+fn make_text_block<W: Write>(rows: u8, cols: u8, w: &mut W) -> io::Result<()> {
     let mut grid = String::new();
 
     // Fill the screen with 'X's
@@ -47,7 +45,8 @@ fn make_test_block<W: Write>(rows: u8, cols: u8, w: &mut W) -> io::Result<()> {
 
     // Line numbering
     for row in 1..=rows {
-        Term::write(row, 1, format!("{row:<3}").as_str(), w)?;
+        let linenum = Style::this(&format!("{row:<3}")).green().get_ansi();
+        Term::write(row, 1, linenum.as_str(), w)?;
     }
 
     w.flush()?;

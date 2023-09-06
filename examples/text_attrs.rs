@@ -1,15 +1,16 @@
-use rust_term_mods::Colorize;
+use term_mods::Style;
 
 fn main() -> std::io::Result<()> {
     println!("Text Attributes:");
 
     // Prints examples of the available text attributes
-    Colorize::this("Bold").bold().println()?;
-    Colorize::this("Faint").faint().println()?;
-    Colorize::this("Italicized").italic().println()?;
-    Colorize::this("Underlined").underline().println()?;
-    Colorize::this("Strikethrough").strike().println()?;
-    Colorize::this("Inverted").invert().println()?;
+    Style::this("Bold").bold().println()?;
+    Style::this("Faint").faint().println()?;
+    Style::this("Italicized").italic().println()?;
+    Style::this("Underlined").underline().println()?;
+    println!("{} <- Hidden", Style::this("Hidden").hide().get_ansi());
+    Style::this("Strikethrough").strike().println()?;
+    Style::this("Inverted").invert().println()?;
 
     println!();
     Ok(())

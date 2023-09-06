@@ -1,6 +1,6 @@
 [package]
-name = "rust_term_mods"
-description = "A simple library for terminal manipulation and text styling using ANSI control sequences."
+name = "term_mods"
+description = "A simple library for formatting text output to the terminal."
 version = "0.1.0"
 authors = ["ryanv404"]
 edition = "2021"
@@ -9,6 +9,3 @@ keywords = ["ansi", "terminal", "colors", "styles"]
 categories = ["command-line-interface"]
 readme = "README.md"
 license = "MIT"
-
-[lib]
-name = "rust_term_mods"

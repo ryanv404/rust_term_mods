@@ -1,12 +1,12 @@
 use std::io;
 
-use rust_term_mods::{Colorize, Term};
+use term_mods::{Style, Term};
 
 fn main() -> io::Result<()> {
     // Prints a full screen 24-bit spectral pattern.
     println!("24-bit RGB Colors:");
 
-    let (height, width) = Term::get_terminal_size();
+    let (height, width) = Term::get_term_size();
 
     let total_cols = u32::from(width) - 1;
     let total_rows = u32::from(height) - 2;
@@ -47,7 +47,7 @@ fn main() -> io::Result<()> {
         let text = symbols[idx % 2];
 
         // Print current cell to stdout
-        Colorize::this(text)
+        Style::this(text)
             .bg_rgb(red, green, blue)
             .fg_rgb(255 - red, 255 - green, 255 - blue)
             .print()?;

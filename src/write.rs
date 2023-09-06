@@ -1,4 +1,4 @@
-pub use crate::colors::{Attr, Bg, Colorize, Fg, CSI};
+use crate::{Bg, Fg, Style};
 
 // Describes the various printing methods.
 enum WriteKind {
@@ -8,38 +8,38 @@ enum WriteKind {
     StderrNewline,
 }
 
-impl<'a> Colorize<'a> {
+#[allow(clippy::missing_errors_doc)]
+impl<'a> Style<'a> {
     /// Prints the styled string to stdout.
     pub fn print(&mut self) -> std::io::Result<()> {
-        self.write_common(WriteKind::Stdout)
+        self.write_common(&WriteKind::Stdout)
     }
 
     /// Prints the styled string to stderr.
     pub fn eprint(&mut self) -> std::io::Result<()> {
-        self.write_common(WriteKind::Stderr)
+        self.write_common(&WriteKind::Stderr)
     }
 
     /// Prints the styled string to stdout with a newline.
     pub fn println(&mut self) -> std::io::Result<()> {
-        self.write_common(WriteKind::StdoutNewline)
+        self.write_common(&WriteKind::StdoutNewline)
     }
 
     /// Prints the styled string to stderr with a newline.
     pub fn eprintln(&mut self) -> std::io::Result<()> {
-        self.write_common(WriteKind::StderrNewline)
+        self.write_common(&WriteKind::StderrNewline)
     }
 
     // Common logic for printing to stdout and stderr.
-    fn write_common(&mut self, kind: WriteKind) -> std::io::Result<()> {
+    fn write_common(&mut self, kind: &WriteKind) -> std::io::Result<()> {
         use std::io::Write;
 
-        let mut ansi_string = if self.text.is_empty() {
-            self.text.to_string()
-        } else {
-            self.get_ansi()
+        let mut ansi_string = match self.text.len() {
+            0 => return Ok(()),
+            _ => self.get_ansi(),
         };
 
-        match kind {
+        match *kind {
             WriteKind::Stdout => {
                 std::io::stdout().write_all(ansi_string.as_bytes())?;
                 std::io::stdout().flush()?;
@@ -58,7 +58,7 @@ impl<'a> Colorize<'a> {
                 std::io::stderr().write_all(ansi_string.as_bytes())?;
                 std::io::stderr().flush()?;
             },
-        };
+        }
 
         Ok(())
     }
@@ -110,19 +110,6 @@ impl std::fmt::Display for Bg {
             Self::BrightWhite => write!(f, "107"),
             Self::Color256(c) => write!(f, "48;5;{c}"),
             Self::Rgb(r, g, b) => write!(f, "48;2;{r};{g};{b}"),
-        }
-    }
-}
-
-impl std::fmt::Display for Attr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            Self::Bold => write!(f, "1"),
-            Self::Faint => write!(f, "2"),
-            Self::Italic => write!(f, "3"),
-            Self::Underline => write!(f, "4"),
-            Self::Invert => write!(f, "7"),
-            Self::Strike => write!(f, "9"),
         }
     }
 }

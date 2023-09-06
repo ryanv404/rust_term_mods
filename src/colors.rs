@@ -1,32 +1,32 @@
-pub use crate::{Attr, Bg, Colorize, Fg};
+use crate::{Bg, CSI, Fg, Style};
 
-/// Control sequence introducer
-pub const CSI: &str = "\x1b[";
+impl<'a> Style<'a> {
+    /// Constructs a default Style object.
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            attr: None,
+            bg: None,
+            fg: None,
+            text: "",
+        }
+    }
 
-/// Reset text color and attributes
-pub const RESET: &str = "\x1b[0m";
-
-impl<'a> Colorize<'a> {
     /// Constructs the text object that will be stylized.
     #[must_use]
     pub fn this(s: &'a str) -> Self {
         Self {
-            has_attr: false,
-            has_bg: false,
-            has_fg: false,
-            attr: None,
-            bg: None,
-            fg: None,
             text: s,
+            ..Self::new()
         }
     }
 
     /// Sets the text color to red.
     ///
     /// ```
-    /// use rust_term_mods::Colorize;
+    /// use term_mods::Style;
     ///
-    /// Colorize::this("Oh no!").red().println();
+    /// Style::this("Oh no!").red().println();
     /// // Prints a red "Oh no!" to stdout with a newline.
     /// ```
     #[must_use]
@@ -150,9 +150,9 @@ impl<'a> Colorize<'a> {
     /// Sets the text color using an RGB value.
     ///
     /// ```
-    /// use rust_term_mods::Colorize;
+    /// use term_mods::Style;
     ///
-    /// Colorize::this("I'm RGB").fg_rgb(25, 123, 92).println();
+    /// Style::this("I'm RGB").fg_rgb(25, 123, 92).println();
     /// // Colors the text "I'm RGB" with the color represented by RGB 25, 123, 92 and
     /// // prints it to stdout with a newline.
     /// ```
@@ -288,98 +288,148 @@ impl<'a> Colorize<'a> {
         *self
     }
 
-    /// Makes the text bold.
-    #[must_use]
-    pub fn bold(&mut self) -> Self {
-        self.attr = Some(Attr::Bold);
-        *self
-    }
-
-    /// Makes the text faint.
-    #[must_use]
-    pub fn faint(&mut self) -> Self {
-        self.attr = Some(Attr::Faint);
-        *self
-    }
-
-    /// Makes the text italicized.
-    #[must_use]
-    pub fn italic(&mut self) -> Self {
-        self.attr = Some(Attr::Italic);
-        *self
-    }
-
-    /// Makes the text underlined.
-    #[must_use]
-    pub fn underline(&mut self) -> Self {
-        self.attr = Some(Attr::Underline);
-        *self
-    }
-
-    /// Inverts the text and background colors.
-    #[must_use]
-    pub fn invert(&mut self) -> Self {
-        self.attr = Some(Attr::Invert);
-        *self
-    }
-
-    /// Inverts the text and background colors.
-    #[must_use]
-    pub fn strike(&mut self) -> Self {
-        self.attr = Some(Attr::Strike);
-        *self
-    }
-
-    // Handles attribute component of the ANSI string.
-    fn get_attr_code(&mut self, ansi_str: &mut String) {
-        if let Some(attr) = self.attr {
-            self.has_attr = true;
-            ansi_str.push_str(&format!("{attr}"));
-        }
-    }
-
     // Handles foreground component of the ANSI string.
-    fn get_fg_code(&mut self, ansi_str: &mut String) {
-        if let Some(fg_color) = self.fg {
-            self.has_fg = true;
-            if self.has_attr {
-                ansi_str.push(';');
+    fn get_fg_code(&mut self, ansi_str: &mut String) -> bool {
+        match (self.attr, self.fg) {
+            (_, None) => false,
+            (Some(_), Some(fg_color)) => {
+                ansi_str.push_str(&format!(";{fg_color}"));
+                true
+            },
+            (None, Some(fg_color)) => {
+                ansi_str.push_str(&format!("{fg_color}"));
+                true
             }
-            ansi_str.push_str(&format!("{fg_color}"));
         }
     }
 
     // Handles background component of the ANSI string.
-    fn get_bg_code(&mut self, ansi_str: &mut String) {
-        if let Some(bg_color) = self.bg {
-            self.has_bg = true;
-            if self.has_attr || self.has_fg {
-                ansi_str.push(';');
+    fn get_bg_code(&mut self, ansi_str: &mut String) -> bool {
+        match (self.attr, self.fg, self.bg) {
+            (_, _, None) => false,
+            (Some(_), _, Some(bg_color)) | (_, Some(_), Some(bg_color)) => {
+                ansi_str.push_str(&format!(";{bg_color}"));
+                true
+            },
+            (None, None, Some(bg_color)) => {
+                ansi_str.push_str(&format!("{bg_color}"));
+                true
             }
-            ansi_str.push_str(&format!("{bg_color}"));
         }
     }
 
-    /// Builds and returns the ANSI string represented by the Colorize object.
+    /// Builds and returns the ANSI string represented by the Style object.
     ///
     /// ```
-    /// use rust_term_mods::Colorize;
+    /// use term_mods::Style;
     ///
-    /// let ansi_string = Colorize::this("I'm bright green!").br_green().get_ansi();
+    /// let ansi_string = Style::this("I'm bright green!").br_green().get_ansi();
     ///
     /// assert_eq!(ansi_string, "\x1b[92mI'm bright green!\x1b[0m".to_string());
     /// ```
     pub fn get_ansi(&mut self) -> String {
-        let mut ansi_str = String::from(CSI);
+        let mut ansi_str = CSI.to_string();
 
-        self.get_attr_code(&mut ansi_str);
-        self.get_fg_code(&mut ansi_str);
-        self.get_bg_code(&mut ansi_str);
+        let has_attr       = self.get_attr_code(&mut ansi_str);
+        let has_foreground = self.get_fg_code(&mut ansi_str);
+        let has_background = self.get_bg_code(&mut ansi_str);
 
-        if self.has_attr || self.has_fg || self.has_bg {
-            format!("{ansi_str}m{}{RESET}", self.text)
+        if has_attr || has_foreground || has_background {
+            format!("{ansi_str}m{}{CSI}0m", self.text)
         } else {
             self.text.to_string()
         }
     }
+}
+
+impl<'a> Default for Style<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Style;
+
+    macro_rules! test_style {
+        ($label:ident: $style:expr => $ansi:literal) => {
+            #[test]
+            fn $label() {
+                assert_eq!($style.get_ansi(), $ansi.to_string());
+            }
+        };
+    }
+
+    // Foreground color tests
+    test_style!(black: Style::this("X").black() => "\x1b[30mX\x1b[0m");
+    test_style!(red: Style::this("X").red() => "\x1b[31mX\x1b[0m");
+    test_style!(green: Style::this("X").green() => "\x1b[32mX\x1b[0m");
+    test_style!(yellow: Style::this("X").yellow() => "\x1b[33mX\x1b[0m");
+    test_style!(blue: Style::this("X").blue() => "\x1b[34mX\x1b[0m");
+    test_style!(magenta: Style::this("X").magenta() => "\x1b[35mX\x1b[0m");
+    test_style!(cyan: Style::this("X").cyan() => "\x1b[36mX\x1b[0m");
+    test_style!(white: Style::this("X").white() => "\x1b[37mX\x1b[0m");
+    test_style!(br_black: Style::this("X").br_black() => "\x1b[90mX\x1b[0m");
+    test_style!(br_red: Style::this("X").br_red() => "\x1b[91mX\x1b[0m");
+    test_style!(br_green: Style::this("X").br_green() => "\x1b[92mX\x1b[0m");
+    test_style!(br_yellow: Style::this("X").br_yellow() => "\x1b[93mX\x1b[0m");
+    test_style!(br_blue: Style::this("X").br_blue() => "\x1b[94mX\x1b[0m");
+    test_style!(br_magenta: Style::this("X").br_magenta() => "\x1b[95mX\x1b[0m");
+    test_style!(br_cyan: Style::this("X").br_cyan() => "\x1b[96mX\x1b[0m");
+    test_style!(br_white: Style::this("X").br_white() => "\x1b[97mX\x1b[0m");
+
+    // Background color tests
+    test_style!(bg_black: Style::this("X").bg_black() => "\x1b[40mX\x1b[0m");
+    test_style!(bg_red: Style::this("X").bg_red() => "\x1b[41mX\x1b[0m");
+    test_style!(bg_green: Style::this("X").bg_green() => "\x1b[42mX\x1b[0m");
+    test_style!(bg_yellow: Style::this("X").bg_yellow() => "\x1b[43mX\x1b[0m");
+    test_style!(bg_blue: Style::this("X").bg_blue() => "\x1b[44mX\x1b[0m");
+    test_style!(bg_magenta: Style::this("X").bg_magenta() => "\x1b[45mX\x1b[0m");
+    test_style!(bg_cyan: Style::this("X").bg_cyan() => "\x1b[46mX\x1b[0m");
+    test_style!(bg_white: Style::this("X").bg_white() => "\x1b[47mX\x1b[0m");
+    test_style!(bg_br_black: Style::this("X").bg_br_black() => "\x1b[100mX\x1b[0m");
+    test_style!(bg_br_red: Style::this("X").bg_br_red() => "\x1b[101mX\x1b[0m");
+    test_style!(bg_br_green: Style::this("X").bg_br_green() => "\x1b[102mX\x1b[0m");
+    test_style!(bg_br_yellow: Style::this("X").bg_br_yellow() => "\x1b[103mX\x1b[0m");
+    test_style!(bg_br_blue: Style::this("X").bg_br_blue() => "\x1b[104mX\x1b[0m");
+    test_style!(bg_br_magenta: Style::this("X").bg_br_magenta() => "\x1b[105mX\x1b[0m");
+    test_style!(bg_br_cyan: Style::this("X").bg_br_cyan() => "\x1b[106mX\x1b[0m");
+
+    // Style combination tests
+    test_style!(
+        bold_green_bg_yellow:
+        Style::this("X").bold().green().bg_yellow() => "\x1b[1;32;43mX\x1b[0m"
+    );
+    test_style!(
+        bg_red_underline_cyan:
+        Style::this("X").bg_red().underline().cyan() => "\x1b[4;36;41mX\x1b[0m"
+    );
+    test_style!(
+        br_black_bg_white_italic:
+        Style::this("X").br_black().bg_white().italic() => "\x1b[3;90;47mX\x1b[0m"
+    );
+
+    // 256-Color mode tests
+    test_style!(fg_256: Style::this("X").fg_256(123) => "\x1b[38;5;123mX\x1b[0m");
+    test_style!(bg_256: Style::this("X").bg_256(243) => "\x1b[48;5;243mX\x1b[0m");
+    test_style!(
+        fg_256_bg_256:
+        Style::this("X").fg_256(123).bg_256(243) => "\x1b[38;5;123;48;5;243mX\x1b[0m"
+    );
+
+    // RGB color tests
+    test_style!(
+        rgb_fg:
+        Style::this("X").fg_rgb(123, 87, 92) => "\x1b[38;2;123;87;92mX\x1b[0m"
+    );
+    test_style!(
+        rgb_bg:
+        Style::this("X").bg_rgb(99, 63, 243) => "\x1b[48;2;99;63;243mX\x1b[0m"
+    );
+    test_style!(
+        rgb_fg_bg_strike:
+        Style::this("X").bg_rgb(23, 24, 25).fg_rgb(123, 52, 212).strike() =>
+        "\x1b[9;38;2;123;52;212;48;2;23;24;25mX\x1b[0m"
+    );
 }
