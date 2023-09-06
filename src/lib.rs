@@ -6,6 +6,8 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::cargo)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
 
 pub mod colors;
 pub mod display;
@@ -152,10 +154,7 @@ pub enum Attr {
 pub struct Scroll;
 
 /// Clear portions of the terminal screen.
-pub struct ClearScreen;
-
-/// Clear portions of the current line.
-pub struct ClearLine;
+pub struct Clear;
 
 /// Manipulate the cursor appearance or position.
 pub struct Cursor;

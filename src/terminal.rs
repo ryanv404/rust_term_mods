@@ -4,153 +4,126 @@ pub use std::{
     str::{self, FromStr},
 };
 
-pub use crate::{
-    colors::CSI, ClearLine, ClearScreen, Cursor, Scroll
-};
+pub use crate::{colors::CSI, Clear, Cursor, Scroll};
 
 impl Scroll {
     /// Scrolls the terminal screen up `num` lines.
-    #[must_use]
-    pub fn up(num: u8) -> String {
-        format!("{CSI}{num}S")
+    pub fn up(num: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{num}S").as_bytes())
     }
 
     /// Scrolls the terminal screen down `num` lines.
-    #[must_use]
-    pub fn down(num: u8) -> String {
-        format!("{CSI}{num}T")
+    pub fn down(num: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{num}T").as_bytes())
     }
 }
 
-impl ClearScreen {
+impl Clear {
     /// Clears the full terminal screen.
-    #[must_use]
-    pub fn all() -> String {
-        format!("{CSI}2J")
-    }
-
-    /// Clears the terminal screen from the cursor to the end of the screen.
-    #[must_use]
-    pub fn to_end() -> String {
-        format!("{CSI}0J")
+    pub fn scr(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}2J").as_bytes())
     }
 
     /// Clears the terminal screen from the cursor to the beginning of the screen.
-    #[must_use]
-    pub fn to_start() -> String {
-        format!("{CSI}1J")
+    pub fn scr_to_start(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}1J").as_bytes())
     }
 
-    /// Clears the full terminal screen.
-    pub fn clr_scr(w: &mut io::StdoutLock) {
-        w.write_all(format!("{CSI}2J").as_bytes()).unwrap();
+    /// Clears the terminal screen from the cursor to the end of the screen.
+    pub fn scr_to_end(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}0J").as_bytes())
     }
-}
 
-impl ClearLine {
     /// Clears the current line.
-    #[must_use]
-    pub fn all() -> String {
-        format!("{CSI}2K")
-    }
-
-    /// Clears the current line from the cursor to the end of the line.
-    #[must_use]
-    pub fn to_end() -> String {
-        format!("{CSI}0K")
+    pub fn line(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}2K").as_bytes())
     }
 
     /// Clears the current line from the cursor to the beginning of the line.
-    #[must_use]
-    pub fn to_start() -> String {
-        format!("{CSI}1K")
+    pub fn line_to_start(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}1K").as_bytes())
     }
 
-    /// Clears the current line.
-    pub fn clr_line(w: &mut io::StdoutLock) {
-        w.write_all(format!("{CSI}2K").as_bytes()).unwrap();
+    /// Clears the current line from the cursor to the end of the line.
+    pub fn line_to_end(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}0K").as_bytes())
     }
 }
 
 impl Cursor {
     /// Shows the terminal cursor.
-    #[must_use]
-    pub fn show() -> String {
-        format!("{CSI}?25h")
+    pub fn show(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}?25h").as_bytes())
     }
 
     /// Hides the terminal cursor.
-    #[must_use]
-    pub fn hide() -> String {
-        format!("{CSI}?25l")
+    pub fn hide(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}?25l").as_bytes())
     }
 
     /// Moves the cursor `num` cells up.
-    #[must_use]
-    pub fn up(num: u8) -> String {
-        format!("{CSI}{num}A")
+    pub fn up(num: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{num}A").as_bytes())
     }
 
     /// Moves the cursor `num` cells down.
-    #[must_use]
-    pub fn down(num: u8) -> String {
-        format!("{CSI}{num}B")
+    pub fn down(num: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{num}B").as_bytes())
     }
 
     /// Moves the cursor `num` cells forward.
-    #[must_use]
-    pub fn forward(num: u8) -> String {
-        format!("{CSI}{num}C")
+    pub fn forward(num: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{num}C").as_bytes())
     }
 
     /// Moves the cursor `num` cells backward.
-    #[must_use]
-    pub fn back(num: u8) -> String {
-        format!("{CSI}{num}D")
+    pub fn back(num: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{num}D").as_bytes())
     }
 
     /// Moves the cursor to column `num`.
-    #[must_use]
-    pub fn column(num: u8) -> String {
-        format!("{CSI}{num}G")
+    pub fn column(num: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{num}G").as_bytes())
     }
 
     /// Moves the cursor to row `row` and column `col`.
-    #[must_use]
-    pub fn goto(row: u8, col: u8) -> String {
-        format!("{CSI}{row};{col}H")
+    pub fn goto(row: u8, col: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{row};{col}H").as_bytes())
     }
 
     /// Moves the cursor to the bottom left position on the screen.
-    pub fn goto_bl(rows: u8, w: &mut io::StdoutLock) {
-        w.write_all(Cursor::goto(rows, 0).as_bytes()).unwrap();
+    pub fn goto_bl(rows: u8, w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}{rows};1H").as_bytes())
     }
 
     /// Moves the cursor to the top left position on the screen.
-    pub fn goto_tl(w: &mut io::StdoutLock) {
-        w.write_all(Cursor::goto(1, 1).as_bytes()).unwrap();
+    pub fn goto_tl(w: &mut io::StdoutLock) -> io::Result<()> {
+        w.write_all(format!("{CSI}1;1H").as_bytes())
     }
 }
 
 /// Writes a message that is centered on the screen.
-pub fn write_centered_msg(row: u8, width: u8, msg: &[u8], w: &mut io::StdoutLock) {
+pub fn write_centered_msg(row: u8, width: u8, msg: &str, w: &mut io::StdoutLock) -> io::Result<()> {
     let len = u8::try_from(msg.len()).unwrap();
-    if len > width { return; }
+
+    if len > width {
+        return Ok(());
+    }
 
     let col = (width / 2) - (len / 2);
-    write_msg(row, col, msg, w);
+    w.write_all(format!("{CSI}{row};{col}H{msg}").as_bytes())
 }
 
 /// Writes a message to a given position on the screen.
-pub fn write_msg(row: u8, col: u8, msg: &[u8], w: &mut io::StdoutLock) {
-    w.write_all(Cursor::goto(row, col).as_bytes()).unwrap();
-    w.write_all(msg).unwrap();
+pub fn write_msg(row: u8, col: u8, msg: &str, w: &mut io::StdoutLock) -> io::Result<()> {
+    w.write_all(format!("{CSI}{row};{col}H{msg}").as_bytes())
 }
 
 /// Attempts to get the terminal size using tput and returns a sensible default
 /// if there is an error.
 ///
 /// Returns (height, width).
+#[must_use]
 pub fn get_terminal_size() -> (u8, u8) {
     // A child process executed with the output() method does not inherit
     // the parent process' stdin by default.
